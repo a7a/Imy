@@ -1,0 +1,627 @@
+<html>
+<body>
+  <div id="result"></div>
+
+  <script src="./testutil.js"></script>
+  <script src="../../dist/js/browser/Imy.js"></script>
+  <script src="../../dist/js/browser/ImyDBManager.js"></script>
+
+  <script>
+
+    var sort_func = function(a,b) {
+      if(a.weight < b.weight) { return 1; }
+      else if(a.weight > b.weight) { return -1; }
+      else if(a.sort_num > b.sort_num) { return 1; }
+      else if(a.sort_num < b.sort_num) { return -1; }
+      else if(a.data_id > b.data_id) { return 1; }
+      else if(a.data_id < b.data_id) { return -1; }
+      else { return 0; }
+    };
+
+    var imy = null;
+
+    var test_data1 = [
+      /*  1 */ { type: "aaa", content: "abxde" },
+      /*  2 */ { type: "aaa", content: "axcye" },
+      /*  3 */ { type: "aaa", content: "abcye" },
+      /*  4 */ { type: "aaa", content: "abcde" }
+    ];
+    var search_data1 = { type: "aaa", content: "abcde" };
+    var update_data1 = { type: "aaa", content: "ayycde" };
+
+    var test_data2 = [
+      /*  5 */ { type: "aaa", content: "ababcde" },
+      /*  6 */ { type: "aaa", content: "abab" },
+      /*  7 */ { type: "aaa", content: "abcde" },
+      /*  8 */ { type: "aaa", content: "xyzababcde" },
+      /*  9 */ { type: "aaa", content: "ababcdexyz" },
+      /* 10 */ { type: "aaa", content: "abxyzabcde" },
+      /* 11 */ { type: "aaa", content: "abaxyzbcde" },
+      /* 12 */ { type: "aaa", content: "babcde" },
+      /* 13 */ { type: "aaa", content: "ababcd" }
+    ];
+
+    var viewAllData = function() {
+      var ret1 = [],
+          ret2 = [],
+          ret3 = [];
+
+      return imy.db.getAllIndexFragments()
+      .then(function(ret) {
+        console.log("imy_idx_fragment");
+        console.log(ret);
+        ret1 = ret;
+      })
+      .then(function() {
+        return imy.db.getAllIndexParameters()
+        .then(function(ret) {
+          console.log("imy_idx_parameter");
+          console.log(ret);
+          ret2 = ret;
+        });
+      })
+      .then(function() {
+        return imy.db.getAllData()
+        .then(function(ret) {
+          console.log("imy_data");
+          console.log(ret);
+          ret3 = ret;
+        });
+      })
+      .then(function() {
+        return [ret1, ret2, ret3];
+      });
+    };
+
+    var matchProp = function matchProp(obj, prop) {
+      for(var key in prop) {
+        if(obj[key] !== prop[key]) {
+          return false;
+        }
+      }
+
+      return true;
+    };
+
+    test("test 001 - new", function(done) {
+      imy = new Imy();
+      imy.useLang("ja");
+      imy.useDatabaseConfig("idb", "test");
+      imy.initialize();
+
+      imy.db.db.deleteDatabase()
+      .then(function() {
+        return imy.open();
+      })
+      .then(function() {
+        return ImyDBManager.createTablesIfNotExist(imy.db.db);
+      })
+      .then(function() {
+        done(true, "new OK");
+      })
+      .catch(function(err) {
+        done(false, "new NG");
+      });
+    })
+
+    .then(function() {
+      return test("test 002 - save", function(done) {
+        imy.save(test_data1[0].type, test_data1[0].content)
+        .then(function(ret) {
+          console.log(ret);
+
+          return viewAllData()
+          .then(function(ret2) {
+            try {
+            assert(ret2[0].length !== 0, "save result check 1");
+            assert(ret2[1].length !== 0, "save result check 2");
+            assert(ret2[2].length !== 0, "save result check 3");
+            } catch(e) { console.log(e); }
+          });
+
+        })
+        .then(function() { return imy.save(test_data1[1].type, test_data1[1].content); })
+        .then(function() { return imy.save(test_data1[2].type, test_data1[2].content); })
+        .then(function() { return imy.save(test_data1[3].type, test_data1[3].content); })
+        .then(function() {
+          done(true, "save OK");
+        })
+        .catch(function(err) {
+          console.log(err);
+          done(false, "save NG");
+        });
+
+      });
+    })
+
+    .then(function() {
+      return test("test 003 - search", function(done) {
+        return imy.search(search_data1.type, search_data1.content)
+        .then(function(res) {
+          console.log("#########");
+
+          res = res.sort(sort_func);
+//          console.table(res);
+
+          assert(res.length === 8, "search result length check");
+          assert(
+            matchProp(res[0], { data_id: 4, start_pos: 0, end_pos: 4 })
+            , "search result check 1"
+          );
+          assert(
+            matchProp(res[1], { data_id: 1, start_pos: 0, end_pos: 4 })
+            , "search result check 2"
+          );
+          assert(
+            matchProp(res[2], { data_id: 3, start_pos: 0, end_pos: 4 })
+            , "search result check 3"
+          );
+          assert(
+            matchProp(res[3], { data_id: 4, start_pos: 1, end_pos: 4 })
+            , "search result check 4"
+          );
+          assert(
+            matchProp(res[4], { data_id: 1, start_pos: 1, end_pos: 4 })
+            , "search result check 5"
+          );
+          assert(
+            matchProp(res[5], { data_id: 2, start_pos: 0, end_pos: 4 })
+            , "search result check 6"
+          );
+          assert(
+            matchProp(res[6], { data_id: 3, start_pos: 1, end_pos: 4 })
+            , "search result check 7"
+          );
+          assert(
+            matchProp(res[7], { data_id: 4, start_pos: 2, end_pos: 4 })
+            , "search result check 8"
+          );
+
+          done(true, "search OK");
+
+          console.log("#########");
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "search NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 004 - update", function(done) {
+        return imy.update(test_data1[0], update_data1)
+        .then(function() {
+          return imy.search(search_data1.type, search_data1.content)
+          .then(function(res) {
+            console.log("#########");
+
+            res = res.sort(sort_func);
+//            console.table(res);
+
+            assert(res.length === 8, "update result length check");
+            assert(
+              matchProp(res[0], { data_id: 4, start_pos: 0, end_pos: 4 })
+              , "update result check 1"
+            );
+            assert(
+              matchProp(res[1], { data_id: 3, start_pos: 0, end_pos: 4 })
+              , "update result check 2"
+            );
+            assert(
+              matchProp(res[2], { data_id: 4, start_pos: 1, end_pos: 4 })
+              , "update result check 3"
+            );
+            assert(
+              matchProp(res[3], { data_id: 1, start_pos: 0, end_pos: 5 })
+              , "update result check 4"
+            );
+            assert(
+              matchProp(res[4], { data_id: 1, start_pos: 3, end_pos: 5 })
+              , "update result check 5"
+            );
+            assert(
+              matchProp(res[5], { data_id: 2, start_pos: 0, end_pos: 4 })
+              , "update result check 6"
+            );
+            assert(
+              matchProp(res[6], { data_id: 3, start_pos: 1, end_pos: 4 })
+              , "update result check 7"
+            );
+            assert(
+              matchProp(res[7], { data_id: 4, start_pos: 2, end_pos: 4 })
+              , "update result check 8"
+            );
+
+            done(true, "update OK");
+
+            console.log("#########");
+          });
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "update NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 005 - remove", function(done) {
+        return imy.remove(test_data1[2].type, test_data1[2].content)
+        .then(function() {
+          return imy.search(search_data1.type, search_data1.content)
+          .then(function(res) {
+            console.log("#########");
+
+            res = res.sort(sort_func);
+//            console.table(res);
+
+            assert(res.length === 6, "remove result length check");
+            assert(
+              matchProp(res[0], { data_id: 4 })
+              , "remove result check 1"
+            );
+            assert(
+              matchProp(res[1], { data_id: 4, start_pos: 1, end_pos: 4 })
+              , "remove result check 2"
+            );
+            assert(
+              matchProp(res[2], { data_id: 1, start_pos: 0, end_pos: 5 })
+              , "remove result check 3"
+            );
+            assert(
+              matchProp(res[3], { data_id: 1, start_pos: 3, end_pos: 5 })
+              , "remove result check 4"
+            );
+            assert(
+              matchProp(res[4], { data_id: 2, start_pos: 0, end_pos: 4 })
+              , "remove result check 5"
+            );
+            assert(
+              matchProp(res[5], { data_id: 4, start_pos: 2, end_pos: 4 })
+              , "remove result check 6"
+            );
+
+            done(true, "remove OK");
+
+            console.log("#########");
+          });
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "remove NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 006 - truncate", function(done) {
+        return imy.truncate()
+        .then(function() {
+          return viewAllData()
+          .then(function(ret) {
+            assert(ret[0].length === 0, "truncate result check 1");
+            assert(ret[1].length === 0, "truncate result check 2");
+            assert(ret[2].length === 0, "truncate result check 3");
+            done(true, "truncate OK");
+          })
+        })
+      });
+    })
+
+    .then(function() { return imy.save(test_data2[0].type, test_data2[0].content); })
+    .then(function() { return imy.save(test_data2[1].type, test_data2[1].content); })
+    .then(function() { return imy.save(test_data2[2].type, test_data2[2].content); })
+    .then(function() { return imy.save(test_data2[3].type, test_data2[3].content); })
+    .then(function() { return imy.save(test_data2[4].type, test_data2[4].content); })
+    .then(function() { return imy.save(test_data2[5].type, test_data2[5].content); })
+    .then(function() { return imy.save(test_data2[6].type, test_data2[6].content); })
+    .then(function() { return imy.save(test_data2[7].type, test_data2[7].content); })
+    .then(function() { return imy.save(test_data2[8].type, test_data2[8].content); })
+    .then(function() {
+      return test("test 007 - search - 2", function(done) {
+        var search_data2 = { type: "aaa", content: "ababcde" };
+
+        return imy.search(search_data2.type, search_data2.content)
+        .then(function(res) {
+          console.log("#########");
+
+          res = res.sort(sort_func);
+//          console.table(res);
+
+          assert(res.length === 20, "search result length check");
+
+          // weight= 1
+          assert(
+            matchProp(res[0], { data_id: 5, start_pos: 0, end_pos: 6 })
+            , "search result check 1"
+          );
+          assert(
+            matchProp(res[1], { data_id: 8, start_pos: 3, end_pos: 9 })
+            , "search result check 2"
+          );
+          assert(
+            matchProp(res[2], { data_id: 9, start_pos: 0, end_pos: 6 })
+            , "search result check 3"
+          );
+
+          // weight= 0.75
+          assert(
+            matchProp(res[3], { data_id: 5, start_pos: 1, end_pos: 6 })
+            , "search result check 4"
+          );
+          assert(
+            matchProp(res[4], { data_id: 8, start_pos: 4, end_pos: 9 })
+            , "search result check 5"
+          );
+          assert(
+            matchProp(res[5], { data_id: 9, start_pos: 1, end_pos: 6 })
+            , "search result check 6"
+          );
+          assert(
+            matchProp(res[6], { data_id: 12, start_pos: 0, end_pos: 5 })
+            , "search result check 7"
+          );
+          assert(
+            matchProp(res[7], { data_id: 13, start_pos: 0, end_pos: 5 })
+            , "search result check 8"
+          );
+
+          // weight= 0.5
+          assert(
+            matchProp(res[8], { data_id: 5, start_pos: 2, end_pos: 6 })
+            , "search result check 9"
+          );
+          assert(
+            matchProp(res[9], { data_id: 7, start_pos: 0, end_pos: 4 })
+            , "search result check 10"
+          );
+          assert(
+            matchProp(res[10], { data_id: 8, start_pos: 5, end_pos: 9 })
+            , "search result check 11"
+          );
+          assert(
+            matchProp(res[11], { data_id: 9, start_pos: 2, end_pos: 6 })
+            , "search result check 12"
+          );
+          assert(
+            matchProp(res[12], { data_id: 10, start_pos: 5, end_pos: 9 })
+            , "search result check 13"
+          );
+          assert(
+            matchProp(res[13], { data_id: 12, start_pos: 1, end_pos: 5 })
+            , "search result check 14"
+          );
+          assert(
+            matchProp(res[14], { data_id: 13, start_pos: 1, end_pos: 5 })
+            , "search result check 15"
+          );
+
+          // other
+          assert(
+            matchProp(res[15], { data_id: 10, start_pos: 0, end_pos: 9 })
+            , "search result check 16"
+          );
+          assert(
+            matchProp(res[16], { data_id: 10, start_pos: 1, end_pos: 9 })
+            , "search result check 17"
+          );
+          assert(
+            matchProp(res[17], { data_id: 11, start_pos: 0, end_pos: 9 })
+            , "search result check 18"
+          );
+          assert(
+            matchProp(res[18], { data_id: 11, start_pos: 1, end_pos: 9 })
+            , "search result check 19"
+          );
+          assert(
+            matchProp(res[19], { data_id: 11, start_pos: 2, end_pos: 9 })
+            , "search result check 20"
+          );
+
+          done(true, "search - 2 OK");
+
+          console.log("#########");
+        })
+      })
+    })
+
+    .then(function() {
+      return test("test 008 - search - 3", function(done) {
+        var search_data3 = { type: "aaa", content: "abcde" };
+
+        return imy.search(search_data3.type, search_data3.content)
+          .then(function(res) {
+          console.log("#########");
+
+          res = res.sort(sort_func);
+          console.table(res);
+
+          // weight= 1
+          assert(
+            matchProp(res[0], { data_id: 5, start_pos: 2, end_pos: 6 })
+            , "search result check 1"
+          );
+          assert(
+            matchProp(res[1], { data_id: 7, start_pos: 0, end_pos: 4 })
+            , "search result check 2"
+          );
+          assert(
+            matchProp(res[2], { data_id: 8, start_pos: 5, end_pos: 9 })
+            , "search result check 3"
+          );
+          assert(
+            matchProp(res[3], { data_id: 9, start_pos: 2, end_pos: 6 })
+            , "search result check 4"
+          );
+          assert(
+            matchProp(res[4], { data_id: 10, start_pos: 5, end_pos: 9 })
+            , "search result check 5"
+          );
+          assert(
+            matchProp(res[5], { data_id: 12, start_pos: 1, end_pos: 5 })
+            , "search result check 6"
+          );
+
+          // weight= 0.93
+          assert(
+            matchProp(res[6], { data_id: 5, start_pos: 1, end_pos: 6 })
+            , "search result check 7"
+          );
+          assert(
+            matchProp(res[7], { data_id: 8, start_pos: 4, end_pos: 9 })
+            , "search result check 8"
+          );
+          assert(
+            matchProp(res[8], { data_id: 9, start_pos: 1, end_pos: 6 })
+            , "search result check 9"
+          );
+          assert(
+            matchProp(res[9], { data_id: 12, start_pos: 0, end_pos: 5 })
+            , "search result check 10"
+          );
+
+          // weight= 0.9
+          assert(
+            matchProp(res[10], { data_id: 5, start_pos: 0, end_pos: 6 })
+            , "search result check 11"
+          );
+          assert(
+            matchProp(res[11], { data_id: 8, start_pos: 3, end_pos: 9 })
+            , "search result check 12"
+          );
+          assert(
+            matchProp(res[12], { data_id: 9, start_pos: 0, end_pos: 6 })
+            , "search result check 13"
+          );
+
+          // weight=0.65
+          assert(
+            matchProp(res[13], { data_id: 13, start_pos: 0, end_pos: 5 })
+            , "search result check 14"
+          );
+          assert(
+            matchProp(res[14], { data_id: 5, start_pos: 3, end_pos: 6 })
+            , "search result check 15"
+          );
+          assert(
+            matchProp(res[15], { data_id: 7, start_pos: 1, end_pos: 4 })
+            , "search result check 16"
+          );
+          assert(
+            matchProp(res[16], { data_id: 8, start_pos: 6, end_pos: 9 })
+            , "search result check 17"
+          );
+          assert(
+            matchProp(res[17], { data_id: 9, start_pos: 3, end_pos: 6 })
+            , "search result check 18"
+          );
+          assert(
+            matchProp(res[18], { data_id: 10, start_pos: 6, end_pos: 9 })
+            , "search result check 19"
+          );
+          assert(
+            matchProp(res[19], { data_id: 11, start_pos: 6, end_pos: 9 })
+            , "search result check 20"
+          );
+          assert(
+            matchProp(res[20], { data_id: 12, start_pos: 2, end_pos: 5 })
+            , "search result check 21"
+          );
+          assert(
+            matchProp(res[21], { data_id: 13, start_pos: 2, end_pos: 5 })
+            , "search result check 22"
+          );
+          assert(
+            matchProp(res[22], { data_id: 13, start_pos: 1, end_pos: 5 })
+            , "search result check 23"
+          );
+
+          // other
+          assert(
+            matchProp(res[23], { data_id: 10, start_pos: 1, end_pos: 9 })
+            , "search result check 24"
+          );
+          assert(
+            matchProp(res[24], { data_id: 11, start_pos: 2, end_pos: 9 })
+            , "search result check 25"
+          );
+          assert(
+            matchProp(res[25], { data_id: 5, start_pos: 4, end_pos: 6 })
+            , "search result check 26"
+          );
+          assert(
+            matchProp(res[26], { data_id: 7, start_pos: 2, end_pos: 4 })
+            , "search result check 27"
+          );
+          assert(
+            matchProp(res[27], { data_id: 8, start_pos: 7, end_pos: 9 })
+            , "search result check 28"
+          );
+          assert(
+            matchProp(res[28], { data_id: 9, start_pos: 4, end_pos: 6 })
+            , "search result check 29"
+          );
+          assert(
+            matchProp(res[29], { data_id: 10, start_pos: 7, end_pos: 9 })
+            , "search result check 30"
+          );
+          assert(
+            matchProp(res[30], { data_id: 11, start_pos: 7, end_pos: 9 })
+            , "search result check 31"
+          );
+          assert(
+            matchProp(res[31], { data_id: 12, start_pos: 3, end_pos: 5 })
+            , "search result check 32"
+          );
+          assert(
+            matchProp(res[32], { data_id: 13, start_pos: 3, end_pos: 5 })
+            , "search result check 33"
+          );
+          assert(
+            matchProp(res[33], { data_id: 11, start_pos: 1, end_pos: 9 })
+            , "search result check 34"
+          );
+          assert(
+            matchProp(res[34], { data_id: 10, start_pos: 0, end_pos: 9 })
+            , "search result check 35"
+          );
+          assert(
+            matchProp(res[35], { data_id: 6, start_pos: 0, end_pos: 1 })
+            , "search result check 36"
+          );
+          assert(
+            matchProp(res[36], { data_id: 11, start_pos: 0, end_pos: 9 })
+            , "search result check 37"
+          );
+          assert(
+            matchProp(res[37], { data_id: 6, start_pos: 1, end_pos: 2 })
+            , "search result check 38"
+          );
+
+          done(true, "search - 3 OK");
+
+          console.log("#########");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 999 - close", function(done) {
+        imy.close()
+        .then(function() {
+          done(imy.db.db._closed === true);
+        });
+      });
+    })
+    .then(function() {
+      write("NG COUNT: " + getValue("ng_count"));
+      flush();
+    })
+    .catch(function(err) {
+      console.error(err);
+    })
+    ;
+  </script>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{
+  "mysql" : {
+    "client": "mysql",
+    "connection": {
+      "host": "localhost",
+      "user": "",
+      "password": "",
+      "database": "test"
+    }
+  },
+  "pg": {
+    "client": "pg",
+    "connection": {
+      "host": "127.0.0.1",
+      "user": "",
+      "password": "",
+      "database": "test"
+    },
+    "searchPath": "public"
+  },
+  "sqlite3": {
+    "client": "sqlite3",
+    "connection": {
+      "filename": ":memory:"
+    },
+    "useNullAsDefault": true
+  },
+  "idb": "test"
+}

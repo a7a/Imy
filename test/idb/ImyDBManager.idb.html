@@ -1,0 +1,301 @@
+<html>
+<body>
+  <div id="result"></div>
+
+  <script src="./testutil.js"></script>
+  <script src="../../dist/js/browser/ImyDBManager.js"></script>
+
+  <script>
+
+
+    var sli2 = null;
+    sli2 = new SLI2("test");
+    sli2.deleteDatabase();
+
+    sli2.open()
+    .then(function() {
+      return test("test 001 - checkObject(db)", function(done) {
+        ImyDBManager.checkObject(sli2)
+        .then(function(ret) {
+          write(ret);
+
+          done(ret.length === 0);
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 002 - createTable", function(done) {
+        ImyDBManager.createTables(sli2)
+        .then(function(ret) {
+          var table_names = ["imy_idx_fragments", "imy_idx_parameters", "imy_data"];
+
+          ImyDBManager.checkObject(sli2, "table", table_names)
+          .then(function(ret) {
+            var exist_tables = [];
+
+            for(var i = 0, l = ret.length; i < l; i = i + 1) {
+              exist_tables[exist_tables.length] = ret[i].name;
+            }
+            exist_tables = exist_tables.sort();
+            table_names = table_names.sort();
+
+            if(match_array(exist_tables, table_names)) {
+              done(true, "create table OK");
+
+            } else {
+              console.log(exist_tables);
+              done(false, "create table NG");
+            }
+          });
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 003 - createIndices", function(done) {
+        ImyDBManager.createIndices(sli2)
+        .then(function() {
+          var index_names = ["imy_idx_parameter_idx1", "imy_data_idx1"];
+
+          ImyDBManager.checkObject(sli2, "index", index_names)
+          .then(function(ret) {
+            var exist_indices = [];
+
+            for(var i = 0, l = ret.length; i < l; i = i + 1) {
+              exist_indices[exist_indices.length] = ret[i].name;
+            }
+            exist_indices = exist_indices.sort();
+            index_names = index_names.sort();
+
+            if(match_array(exist_indices, index_names)) {
+              done(true, "create index OK");
+
+            } else {
+              console.log(exist_indices);
+              done(false, "create index NG");
+            }
+          });
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 004 - dropIndices", function(done) {
+        ImyDBManager.dropIndices(sli2)
+        .then(function() {
+          var index_names = ["imy_idx_parameter_idx1", "imy_data_idx1"];
+
+          ImyDBManager.checkObject(sli2, "index", index_names)
+          .then(function(ret) {
+            done(ret.length === 0, "drop index OK");
+          });
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 005 - dropTables", function(done) {
+        ImyDBManager.dropTables(sli2)
+        .then(function() {
+          var table_names = ["imy_idx_fragments", "imy_idx_parameters", "imy_data"];
+
+          ImyDBManager.checkObject(sli2, "table", table_names)
+          .then(function(ret) {
+            done(ret.length === 0, "drop table OK");
+          });
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 101 - createTablesIfNotExist - 1", function(done) {
+        ImyDBManager.createTablesIfNotExist(sli2)
+        .then(function(ret) {
+          var table_names = ["imy_idx_fragments", "imy_idx_parameters", "imy_data"];
+
+          ImyDBManager.checkObject(sli2, "table", table_names)
+          .then(function(ret) {
+            var exist_tables = [];
+
+            for(var i = 0, l = ret.length; i < l; i = i + 1) {
+              exist_tables[exist_tables.length] = ret[i].name;
+            }
+            exist_tables = exist_tables.sort();
+            table_names = table_names.sort();
+
+            if(match_array(exist_tables, table_names)) {
+              done(true, "create table (if not exist) OK");
+
+            } else {
+              console.log(exist_tables);
+              done(false, "create table (if not exist) NG");
+            }
+          });
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 102 - createTablesIfNotExist - 2", function(done) {
+        ImyDBManager.createTablesIfNotExist(sli2)
+        .then(function(ret) {
+          var table_names = ["imy_idx_fragments", "imy_idx_parameters", "imy_data"];
+
+          ImyDBManager.checkObject(sli2, "table", table_names)
+          .then(function(ret) {
+            var exist_tables = [];
+
+            for(var i = 0, l = ret.length; i < l; i = i + 1) {
+              exist_tables[exist_tables.length] = ret[i].name;
+            }
+            exist_tables = exist_tables.sort();
+            table_names = table_names.sort();
+
+            if(match_array(exist_tables, table_names)) {
+              done(true, "create table (if not exist) OK");
+
+            } else {
+              console.log(exist_tables);
+              done(false, "create table (if not exist) NG");
+            }
+          });
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, err.message);
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 103 - createIndicesIfNotExist - 1", function(done) {
+        ImyDBManager.createIndicesIfNotExist(sli2)
+        .then(function() {
+          var index_names = ["imy_idx_parameter_idx1", "imy_data_idx1"];
+
+          ImyDBManager.checkObject(sli2, "index", index_names)
+          .then(function(ret) {
+            var exist_indices = [];
+
+            for(var i = 0, l = ret.length; i < l; i = i + 1) {
+              exist_indices[exist_indices.length] = ret[i].name;
+            }
+            exist_indices = exist_indices.sort();
+            index_names = index_names.sort();
+
+            if(match_array(exist_indices, index_names)) {
+              done(true, "create index (if not exist) OK");
+
+            } else {
+              console.log(exist_indices);
+              done(false, "create index (if not exist) NG");
+            }
+          });
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 104 - createIndicesIfNotExist - 2", function(done) {
+        ImyDBManager.createIndicesIfNotExist(sli2)
+        .then(function() {
+          var index_names = ["imy_idx_parameter_idx1", "imy_data_idx1"];
+
+          ImyDBManager.checkObject(sli2, "index", index_names)
+          .then(function(ret) {
+            var exist_indices = [];
+
+            for(var i = 0, l = ret.length; i < l; i = i + 1) {
+              exist_indices[exist_indices.length] = ret[i].name;
+            }
+            exist_indices = exist_indices.sort();
+            index_names = index_names.sort();
+
+            if(match_array(exist_indices, index_names)) {
+              done(true, "create index (is not exist) OK");
+
+            } else {
+              console.log(exist_indices);
+              done(false, "create index (if not exist) NG");
+            }
+          });
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 105 - dropIndicesIfExist - 1", function(done) {
+        ImyDBManager.dropIndicesIfExist(sli2)
+        .then(function() {
+          var index_names = ["imy_idx_parameter_idx1", "imy_data_idx1"];
+
+          ImyDBManager.checkObject(sli2, "index", index_names)
+          .then(function(ret) {
+            done(ret.length === 0, "drop index (if exist) OK");
+          })
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 106 - dropIndicesIfExist - 2", function(done) {
+        ImyDBManager.dropIndicesIfExist(sli2)
+        .then(function() {
+          var index_names = ["imy_idx_parameter_idx1", "imy_data_idx1"];
+
+          ImyDBManager.checkObject(sli2, "index", index_names)
+          .then(function(ret) {
+            done(ret.length === 0, "drop index (if exist) OK");
+          })
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 107 - dropTablesIfExist - 1", function(done) {
+        ImyDBManager.dropTablesIfExist(sli2)
+        .then(function() {
+          var table_names = ["imy_idx_fragments", "imy_idx_parameters", "imy_data"];
+
+          ImyDBManager.checkObject(sli2, "table", table_names)
+          .then(function(ret) {
+            done(ret.length === 0, "drop table OK");
+          });
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 108 - dropTablesIfExist - 2", function(done) {
+        ImyDBManager.dropTablesIfExist(sli2)
+        .then(function() {
+          var table_names = ["imy_idx_fragments", "imy_idx_parameters", "imy_data"];
+
+          ImyDBManager.checkObject(sli2, "table", table_names)
+          .then(function(ret) {
+            done(ret.length === 0, "drop table OK");
+          });
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 999 - close", function(done) {
+        sli2.close()
+        .then(function() {
+          done(sli2._closed === true);
+        });
+      });
+    })
+    .then(function() {
+      write("NG COUNT: " + getValue("ng_count"));
+      flush();
+    })
+    .catch(function(err) {
+      console.error(err);
+    })
+    ;
+  </script>
+</body>
+</html>

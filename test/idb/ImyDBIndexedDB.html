@@ -1,0 +1,508 @@
+<html>
+<body>
+  <div id="result"></div>
+
+  <script src="./testutil.js"></script>
+  <script src="../../dist/js/browser/ImyDBManager.js"></script>
+  <script src="../../dist/js/browser/ImyDBIndexedDB.js"></script>
+
+  <script>
+
+    var test_data1 = [
+      { type: "type_aaa", value: "10" },
+      { type: "type_aaa", value: "11" },
+      { type: "type_aaa", value: "12" }
+    ];
+    var test_data2 = [
+      { type: 'type_aaa', idx_fragment_id: 1, data_id: 1, content_pos1: 1, content_pos2: 2, sort_flag: 0, skip: 1 },
+      { type: 'type_aaa', idx_fragment_id: 2, data_id: 2, content_pos1: 2, content_pos2: 3, sort_flag: 0, skip: 2 },
+      { type: 'type_aaa', idx_fragment_id: 3, data_id: 3, content_pos1: 3, content_pos2: 4, sort_flag: 0, skip: 3 },
+    ];
+    var test_data3 = [
+      { type: "type_aaa", content: "abcdefg" },
+      { type: "type_aaa", content: "aaaabbb" },
+      { type: "type_aaa", content: "qqwweerr" },
+      { type: "type_aaa", content: "ttyuuuioo" },
+      { type: "type_aaa", content: "zxcc" },
+      { type: "type_aaa", content: "fffgggghh" },
+    ];
+
+    var idb = null;
+
+    (function() {
+      return test("test 001 - new", function(done) {
+        idb = new ImyDBIndexedDB();
+        idb.useConfig("test");
+        idb.deubug = true;
+        idb.setDebugger(function(args) {
+          console.log(args);
+        });
+
+        idb.db.deleteDatabase()
+        .then(function() {
+          return idb.open();
+        })
+        .then(function() {
+          return ImyDBManager.createTablesIfNotExist(idb.db);
+        })
+        .then(function() {
+          done(true);
+        });
+      });
+    }())
+
+    .then(function() {
+      return test("test 002 - addIndexFragment", function(done) {
+        idb.addIndexFragment(test_data1[0].type, test_data1[0].value)
+        .then(function(ret) {
+          console.log(ret);
+          console.log("addIndexFragment OK");
+        })
+        .then(function() {
+          return idb.addIndexFragment(test_data1[1].type, test_data1[1].value)
+          .then(function(ret) {
+            console.log(ret);
+          });
+        })
+        .then(function() {
+          return idb.addIndexFragment(test_data1[2].type, test_data1[2].value)
+          .then(function(ret) {
+            console.log(ret);
+          });
+        })
+        .then(function() {
+          done(true, "addIndexFragment OK");
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "addIndexFragment NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 003 - getAllIndexFragments", function(done) {
+        idb.getAllIndexFragments()
+        .then(function(rows) {
+          var compared = false,
+              test_result = true;
+
+          console.log("getAllIndexFragments OK");
+          console.table(rows);
+
+          for(var i = 0, l = rows.length; i < l; i = i + 1) {
+            var row = rows[i],
+                test_datum = test_data1[row.id - 1];
+
+            compared = true;
+
+            if(row.type !== test_datum.type || row.value !== test_datum.value) {
+              test_result = false;
+              break;
+            }
+          }
+
+          done((compared && test_result) === true, "getAllIndexFragments OK");
+
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "getAllIndexFragments Ng");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 004 - addIndexParameter", function(done) {
+        idb.addIndexParameter(
+          test_data2[0].type, test_data2[0].idx_fragment_id, test_data2[0].data_id,
+          test_data2[0].content_pos1, test_data2[0].content_pos2, test_data2[0].sort_flag, test_data2[0].skip
+        )
+        .then(function(ret) {
+          console.log("addIndexParameter OK");
+          console.log(ret);
+        })
+        .then(function() {
+          return idb.addIndexParameter(
+            test_data2[1].type, test_data2[1].idx_fragment_id, test_data2[1].data_id,
+            test_data2[1].content_pos1, test_data2[1].content_pos2, test_data2[1].sort_flag, test_data2[1].skip
+          )
+          .then(function(ret) {
+            console.log(ret);
+          });
+        })
+        .then(function() {
+          return idb.addIndexParameter(
+            test_data2[2].type, test_data2[2].idx_fragment_id, test_data2[2].data_id,
+            test_data2[2].content_pos1, test_data2[2].content_pos2, test_data2[2].sort_flag, test_data2[2].skip
+          )
+          .then(function(ret) {
+            console.log(ret);
+          });
+        })
+        .then(function() {
+          done(true, "addIndexParameter OK");
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "addIndexParameter NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 005 - getAllIndexParameters", function(done) {
+        idb.getAllIndexParameters()
+        .then(function(rows) {
+          var compared = false,
+              test_result = true;
+
+          console.log("getAllIndexParameters OK");
+          console.table(rows);
+
+          for(var i = 0, l = rows.length; i < l; i = i + 1) {
+            var row = rows[i],
+                test_datum = test_data2[i];
+
+            compared = true;
+
+            if(row.type !== test_datum.type || row.idx_fragment_id !== test_datum.idx_fragment_id
+               || row.data_id !== test_datum.data_id || row.content_pos1 !== test_datum.content_pos1
+              || row.content_pos2 !== test_datum.content_pos2 || row.skip !== test_datum.skip
+            ) {
+              test_result = false;
+              break;
+            }
+          }
+
+          done((compared && test_result) === true, "getAllIndexParameters OK");
+
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "getAllIndexParameters NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 006 - removeIndexParameters", function(done) {
+        idb.removeIndexParameters(
+          test_data2[1].data_id
+        )
+        .then(function(ret) {
+          console.log("removeIndexParameters OK");
+          done(true, "removeIndexParameters OK");
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "removeIndexParameters NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 007 - getAllIndexParameters", function(done) {
+        idb.getAllIndexParameters()
+        .then(function(rows) {
+          var compared = false,
+              test_result = true,
+              _test_data = [];
+
+          _test_data.push(test_data2[0]);
+          _test_data.push(test_data2[2]);
+
+          console.log("getAllIndexParameters OK");
+          console.table(rows);
+
+          for(var i = 0, l = rows.length; i < l; i = i + 1) {
+            var row = rows[i],
+                test_datum = _test_data[i];
+
+            compared = true;
+
+            if(row.type !== test_datum.type || row.idx_fragment_id !== test_datum.idx_fragment_id
+               || row.data_id !== test_datum.data_id || row.content_pos1 !== test_datum.content_pos1
+               || row.content_pos2 !== test_datum.content_pos2 || row.skip !== test_datum.skip
+              ) {
+              test_result = false;
+              break;
+            }
+          }
+
+          done((compared && test_result) === true, "getAllIndexParameters OK");
+
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "getAllIndexParameters NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 008 - countIndexParametersOfFragment", function(done) {
+        idb.countIndexParametersOfFragment(test_data2[0].type, test_data1[0].value)
+        .then(function(ret) {
+          console.log(ret);
+
+          done(ret === 1, "countIndexParametersOfFragment OK");
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "countIndexParametersOfFragment NG");
+        })
+      });
+    })
+
+    .then(function() {
+      return test("test 009 - addDatum", function(done) {
+        idb.addDatum(test_data3[0].type, test_data3[0].content)
+        .then(function(ret) {
+          console.log("addDatum OK");
+          console.log(ret);
+        })
+        .then(function() {
+          return idb.addDatum(test_data3[1].type, test_data3[1].content)
+          .then(function(ret) {
+            console.log(ret);
+          });
+        })
+        .then(function() {
+          return idb.addDatum(test_data3[2].type, test_data3[2].content)
+          .then(function(ret) {
+            console.log(ret);
+          });
+        })
+        .then(function() {
+          return idb.addDatum(test_data3[3].type, test_data3[3].content)
+          .then(function(ret) {
+            console.log(ret);
+          });
+        })
+        .then(function() {
+          return idb.addDatum(test_data3[4].type, test_data3[4].content)
+          .then(function(ret) {
+            console.log(ret);
+          });
+        })
+        .then(function() {
+          return idb.addDatum(test_data3[5].type, test_data3[5].content)
+          .then(function(ret) {
+            console.log(ret);
+          });
+        })
+        .then(function() {
+          done(true, "addDataum OK");
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "addDatum NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 010 - getAllData", function(done) {
+        idb.getAllData()
+        .then(function(rows) {
+          var compared = false,
+              test_result = true;
+
+          console.log("getAllData OK")
+          console.table(rows);
+
+          for(var i = 0, l = rows.length; i < l; i = i + 1) {
+            var row = rows[i],
+                test_datum = test_data3[row.id - 1];
+
+            compared = true;
+
+            if(row.type !== test_datum.type || row.content !== test_datum.content) {
+              test_result = false;
+              break;
+            }
+          }
+
+          done((compared && test_result) === true, "getAllData OK");
+
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "getAllData NG");
+        })
+      });
+    })
+
+    .then(function() {
+      return test("test 011 - removeData", function(done) {
+        idb.removeData(test_data3.indexOf(test_data3[1]) + 1)
+        .then(function(ret) {
+          console.log("removeData OK");
+          console.log(ret);
+        })
+        .then(function() {
+          return idb.removeData(test_data3.indexOf(test_data3[3]) + 1)
+          .then(function(ret) {
+            console.log(ret);
+          });
+        })
+        .then(function() {
+          done(true, "removeData OK");
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "removeData NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 012 - updateData", function(done) {
+        idb.updateData(
+          { type: "type_bbb", content: "update_abc" },
+          { id: test_data3.indexOf(test_data3[0]) + 1 }
+        )
+        .then(function(ret) {
+          console.log(ret);
+          done(true, "updateData OK");
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "updateData NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 013 getDataForTypeAndContent", function(done) {
+        idb.getDataForTypeAndContent(test_data3[0].type, test_data3[0].content)
+        .then(function(rows) {
+          console.log("getDataForTypeAndContent OK");
+          console.log(rows);
+
+          done(rows.length === 0, "getDataForTypeAndContent OK");
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "getDataForTypeAndContent NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 014 getDatumForId - 1", function(done) {
+        var ret = {};
+
+        idb.getDatumForId(test_data3.indexOf(test_data3[1]) + 1)
+        .then(function(rows) {
+          console.log("getDatumForId - 1 OK");
+          console.log(rows);
+          ret[0] = rows;
+        })
+        .then(function() {
+          return idb.getDatumForId(test_data3.indexOf(test_data3[3]) + 1)
+          .then(function(rows) {
+            console.log(rows);
+            ret[1] = rows;
+          });
+        })
+        .then(function() {
+          done(ret[0].length === 0 && ret[1].length === 0, "getDatumForId - 1 OK");
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "getDatumForId - 1 NG");
+        });
+      });
+    })
+
+    .then(function() {
+      return test("test 015 getDatumForId - 2", function(done) {
+        idb.getDatumForId(test_data3.indexOf(test_data3[2]) + 1)
+        .then(function(rows) {
+          console.log(rows);
+
+          var row = rows[0],
+              test_datum = test_data3[2],
+              test_result = true;
+
+          if(!row || row.type !== test_datum.type || row.content !== test_datum.content
+             || row.no !== test_datum.no || row.page !== test_datum.page
+            ) {
+            test_result = false;
+          }
+
+          done(test_result === true, "getDatumForId - 2 OK");
+
+        })
+        .catch(function(err) {
+          console.error(err);
+          done(false, "getDatumForId - 2 NG");
+        })
+      });
+    })
+
+    .then(function() {
+      return test("016 truncateIndexFragments", function(done) {
+        idb.truncateIndexFragments()
+        .then(function(ret) {
+          console.log(ret);
+
+          idb.getAllIndexFragments()
+          .then(function(rows) {
+            done(rows.length === 0, "truncateIndexFragments OK");
+          });
+        });
+      });
+    })
+
+    .then(function() {
+      return test("017 truncateIndexParameters", function(done) {
+        idb.truncateIndexParameters()
+        .then(function(ret) {
+          console.log(ret);
+
+          idb.getAllIndexParameters()
+          .then(function(rows) {
+            done(rows.length === 0, "truncateIndexParameters OK");
+          });
+        });
+      });
+    })
+
+    .then(function() {
+      return test("018 truncateData", function(done) {
+        idb.truncateData()
+        .then(function(rows) {
+          console.log(rows);
+
+          idb.getAllData()
+          .then(function(rows) {
+            done(rows.length === 0, "truncateData OK");
+          });
+        });
+      })
+    })
+
+    .then(function() {
+      return test("test 999 - close", function(done) {
+        //sli2.close()
+        idb.close()
+        .then(function() {
+          //done(sli2._closed === true);
+          done(idb.db._closed === true);
+        });
+      });
+    })
+    .then(function() {
+      write("NG COUNT: " + getValue("ng_count"));
+      flush();
+    })
+//    .catch(function(err) {
+//      console.error(err);
+//    })
+    ;
+  </script>
+</body>
+</html>
