@@ -84,9 +84,9 @@ describe('test - Imy.mysql', function() {
     var update_data1 = { type: "aaa", content: "ayycde" };
 
 
-    ImyDBManager.dropTablesIfExist(imy.db.db)
+    ImyDBManager.dropTablesIfExist(imy.getDatabaseObject())
     .then(function() {
-      return ImyDBManager.initialize(imy.db.db)
+      return ImyDBManager.initialize(imy.getDatabaseObject())
       .then(function() {
         return imy.save(test_data1[0].type, test_data1[0].content)
         .then(function(ret) {

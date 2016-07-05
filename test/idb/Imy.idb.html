@@ -89,12 +89,12 @@
       imy.useDatabaseConfig("idb", "test");
       imy.initialize();
 
-      imy.db.db.deleteDatabase()
+      imy.getDatabaseObject().deleteDatabase()
       .then(function() {
         return imy.open();
       })
       .then(function() {
-        return ImyDBManager.createTablesIfNotExist(imy.db.db);
+        return ImyDBManager.createTablesIfNotExist(imy.getDatabaseObject());
       })
       .then(function() {
         done(true, "new OK");

@@ -1750,6 +1750,9 @@
         return new Error("ConfigError " + name + "#" + method + " : " + mess);
       };
     },
+    "driver_error": function(driver) {
+      return new Error("DriverError: driver " + driver + " is not supported");
+    },
     "database_error": function(name, method) {
       return new Error("DatabaseError: " + name + "#" + method);
     },
@@ -1764,6 +1767,9 @@
     },
     "not_registry_data": function(type, content) {
       return new Error("NotRegistryData: type=" + type + ", content=" + content);
+    },
+    "is_not_initialize": function(name) {
+      return new Error(name + " is not initialize");
     }
   };
 

@@ -88,9 +88,9 @@ describe('test - Imy.pg', function() {
     /*
      knexのpgでのinsert時の動作がおかしいため、対応保留
     */
-    ImyDBManager.dropTablesIfExist(imy.db.db)
+    ImyDBManager.dropTablesIfExist(imy.getDatabaseObject())
     .then(function() {
-      return ImyDBManager.initialize(imy.db.db)
+      return ImyDBManager.initialize(imy.getDatabaseObject())
       .then(function() {
         return imy.save(test_data1[0].type, test_data1[0].content)
         .then(function(ret) {

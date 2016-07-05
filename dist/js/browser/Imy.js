@@ -33,20 +33,21 @@
    * @returns {void}
    */
   Imy.prototype.initialize = function initialize() {
-    var config_error = ERROR.config_error(this.constructor._name_, "initialize");
-
-    if(!global_conf[this._lang]) {
-      throw config_error("conf.json not supported lang '" + this._lang + ".");
-    }
+    var config_error = ERROR.config_error(this.constructor._name_, "initialize"),
+        driver_error = ERROR.driver_error;
 
     if(!this._conf) {
+      if(!global_conf[this._lang]) {
+        throw config_error("default config is not support lang '" + this._lang + ".");
+      }
+
       this._conf = global_conf[this._lang];
     }
     if(!this._conf.skip) {
-      throw config_error("conf.json has no 'skip' parameter for lang '" + this._lang + "'.");
+      throw config_error("config has no 'skip' parameter for lang '" + this._lang + "'.");
 
     } else if(!Array.isArray(this._conf.omit)) {
-      throw config_error("'omit' parameter (of conf.json) must be Array.");
+      throw config_error("'omit' parameter (of conf) must be Array.");
     }
 
     if(this._dbconf) {
@@ -57,13 +58,13 @@
         this.db = new ImyDBIndexedDB(this._conf);
 
       } else {
-        throw new Error();
+        throw driver_error(this._driver);
       }
 
       this.db.useConfig(this._dbconf);
 
     } else {
-      throw new Error();
+      throw config_error("no database config");
     }
 
   };
@@ -74,14 +75,15 @@
    * @returns {Promise}
    */
   Imy.prototype._isInitialize = function _isInitialize() {
-    var that = this;
+    var that = this,
+        is_not_initialize = ERROR.is_not_initialize;
 
     return new SyncPromise(function(fulfill, reject) {
       if(that.db) {
         fulfill();
 
       } else {
-        reject(new Error("Imy is not initialize"));
+        reject(is_not_initialize("Imy"));
       }
     });
   };
@@ -154,6 +156,15 @@
    */
   Imy.prototype.useConfig = function useConfig(conf) {
     this._conf = conf;
+  };
+
+  /**
+   * @public
+   * @function
+   * @returns {Mixed(Knex|SLI2)}
+   */
+  Imy.prototype.getDatabaseObject = function getDatabaseObject() {
+    return this.db.db;
   };
 
   /**
@@ -2824,6 +2835,9 @@ module.exports={
         return new Error("ConfigError " + name + "#" + method + " : " + mess);
       };
     },
+    "driver_error": function(driver) {
+      return new Error("DriverError: driver " + driver + " is not supported");
+    },
     "database_error": function(name, method) {
       return new Error("DatabaseError: " + name + "#" + method);
     },
@@ -2838,6 +2852,9 @@ module.exports={
     },
     "not_registry_data": function(type, content) {
       return new Error("NotRegistryData: type=" + type + ", content=" + content);
+    },
+    "is_not_initialize": function(name) {
+      return new Error(name + " is not initialize");
     }
   };
 
